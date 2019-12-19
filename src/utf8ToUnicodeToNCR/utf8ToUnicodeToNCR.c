@@ -12,7 +12,6 @@ void printfHex(const char* str, int len)
 {
 	if (NULL==str) return;
 	while (len--) {
-		//SS_LOG(SS_DEBUG, "%2x", (unsigned char)(*str));
 		printf("%02X ", (unsigned char)(*str++));
 	}
 	printf("\n");
@@ -514,8 +513,8 @@ int utf8_to_url_component(const unsigned char* utf8Str, unsigned char* urlCompon
 /*
  * @ intro: Translate utf-encoded-str to unicode str.
  * @ utf8Str: utf8-encoded-str. such as 110xxxx 10xxxxxx.
- * @ return: -1(input null), -2(failed), -3(buffer small), >=0 (urlComponet length).
-*/
+ * @ return: -1(input null), -2(failed), -3(buffer small), >=0 (unicode length).
+ */
 int utf8_to_unicode(const unsigned char* utf8Str, unsigned char* unicodeBuff, unsigned int len )
 {
     int nBytes = 0;
@@ -530,16 +529,49 @@ int utf8_to_unicode(const unsigned char* utf8Str, unsigned char* unicodeBuff, un
         if (nBytes>0 && currLen+nBytes<=len) 
         {
             if(currLen+nBytes>len) return -3;
-            memcpy(unicodeBuff+currLen*2, &unicode, 2);
+            memcpy(unicodeBuff+currLen, &unicode, 2);
             cursor += nBytes;
-            currLen++;
+            currLen+= sizeof(char)*2;
         }
         else return -2;
     }    
-    return currLen*sizeof(char)*2;
+    return currLen;
 }
 
-// unicode_to_utf8();
+/*
+ * @ intro: Translate unicode str to utf-encoded-str .
+ * @ unicodeStr: Unicode, two bytes generally. such as: 5F00.
+ * @ return: -1(input null), -2(failed), -3(buffer small), >=0 (utf8 length).
+ */
+int unicode_to_utf8(const unsigned char* unicodeStr, unsigned int unicodeLen, unsigned char* utf8Buff, unsigned int len)
+{
+	int currLen = 0, nBytes = 0;	// utf8word bytes;
+	unsigned char utf8Str[8];
+	unsigned char* cursor = (unsigned char*)unicodeStr;
+	//printfHex(cursor, 6);
+	if (NULL==unicodeStr || NULL==utf8Buff) return -1;
+	while (unicodeLen>0)
+	{
+		unsigned int unicode = 0;	// Clear high bytes
+		unsigned char* ch = (unsigned char*)&unicode;
+		ch[0] |= *cursor;
+		cursor++;
+		ch[1] |= *cursor;
+		memset(utf8Str, 0, sizeof(utf8Str));
+		nBytes = _unicode_to_utf8(unicode, utf8Str, sizeof(utf8Str));
+		if (nBytes>0) 
+		{
+			if (currLen+nBytes>len) return -3;
+			strncpy(utf8Buff+currLen, utf8Str, nBytes);
+			currLen += nBytes;
+			cursor++;
+			unicodeLen -= 2;
+		}
+		else return -2;
+	}
+	return currLen;
+}
+
 // To do: Test GBK function
 
 void Test_ascii_hex_to_char()
@@ -693,6 +725,22 @@ void Test_utf8_to_unicode()
     printf("\n");
 }
 
+void Test_unicode_to_utf8()
+{
+	printf("=== Test unicode_to_utf8=== \n");
+	int utf8Len, unicodeLen;
+    //char* utf8Str= "开发人员";
+    char* utf8Str= "开发人员";
+	unsigned char utf8Buff[128];
+    unsigned char unicodeBuff[128];
+    memset(unicodeBuff, 0, sizeof(unicodeBuff));
+    memset(utf8Buff, 0, sizeof(utf8Buff));
+    unicodeLen = utf8_to_unicode(utf8Str, unicodeBuff, sizeof(unicodeBuff));
+    printfHex(unicodeBuff, unicodeLen);
+	utf8Len = unicode_to_utf8(unicodeBuff, unicodeLen, utf8Buff, sizeof(utf8Buff));
+	printf("Test utf8Buff:%s utfLen:%d\n\n", utf8Buff, utf8Len);
+}
+
 int main(int argc, char** argv)
 {
 	if (argv[1])
@@ -717,6 +765,7 @@ int main(int argc, char** argv)
     Test_url_ncr_to_utf8();
     Test_hex_char_split();
     Test_utf8_to_unicode();
+	Test_unicode_to_utf8();
 	return 0;
 }
 

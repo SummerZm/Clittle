@@ -86,7 +86,12 @@
         // GBK:开发人员
 	    char str[] = {0xbf,0xaa,0xb7,0xa2,0xc8,0xcb,0xd4,0xb1,'\0'};
     ```
-
+- <b>常见的重定义错误</b>
+	```C
+		// 假如以下两行代码出现在不同文件中，会产生较隐秘的重定义错误
+		typedef int BOOL;
+		#define BOOL int;
+	```
 
 
 

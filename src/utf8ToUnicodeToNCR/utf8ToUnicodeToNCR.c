@@ -6,7 +6,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include "utf8ToUnicodeToNCR.h"
+
+#ifndef _MSC_VER
+#include <iconv.h>
+#else
+#include <windows.h>
+#endif
 
 void printfHex(const char* str, int len)
 {
@@ -108,9 +115,9 @@ int _analize_gbk_character_head(const char* str)
 	if (_is_ascii(str)) {
 		nBytes = 1;
 	} 
-	else if (*str>=0x80)	// 1000 0000
+	else if ((char)(*str)>=(char)0x80)	// 1000 0000
 	{
-		if (*str>=0x81 && *str<=0xFE) nBytes += 2;
+		if ((char)(*str)>=(char)(0x81) && (char)(*str)<=(char)(0xFE)) nBytes += 2;
 	}
 	return nBytes;
 }
@@ -572,6 +579,122 @@ int unicode_to_utf8(const unsigned char* unicodeStr, unsigned int unicodeLen, un
 	return currLen;
 }
 
+/*
+ * @ intro: For window change utf8 to gbk.
+ * @ src: UTF8 str.
+ * @ dst: GBK buffer.
+ * @ len: GBK buffer len.
+ * @ return: -1(Failed) / 0(OK)
+ */
+extern int utf8_to_gbk(const char* src, char* const dst, int len)
+{
+	int ret = -1;
+#ifdef _MSC_VER
+	int strLen = 0;
+	wchar_t *strUnicode = NULL;
+	if (NULL==src || NULL==dst || len<=0) return -1;
+	// UTF-8 --> unicode
+	strLen = MultiByteToWideChar(CP_UTF8, 0, src, -1, NULL, 0);
+	strUnicode = malloc(sizeof(wchar_t)*strLen);
+	memset(strUnicode, 0, sizeof(wchar_t)*strLen);
+	MultiByteToWideChar(CP_UTF8, 0, src, -1, strUnicode, strLen);
+	//unicode --> gbk
+	strLen = WideCharToMultiByte(CP_ACP, 0, strUnicode, -1, NULL, 0, NULL, NULL);
+	if (strLen<=len) {
+		WideCharToMultiByte(CP_ACP,0, strUnicode, -1, dst, strLen, NULL, NULL);
+		ret = 0;	
+	}
+	free(strUnicode);
+#else
+    if (src && dst && len>0)
+    {
+	    iconv_t cd;
+	    size_t inlen = strlen(src)+1;
+	    size_t outlen = len;
+	    char* inbuf = (char*)malloc(inlen);
+	    char* inbuf_hold = inbuf;
+	    char* outbuf = dst;
+	    memset(inbuf, 0, inlen);
+	    memcpy(inbuf, src, inlen);
+	    cd = iconv_open("GBK", "UTF-8");
+        if(cd != (iconv_t)-1) {
+            ret = iconv(cd, &inbuf, &inlen, &outbuf, &outlen);
+            if(ret != 0) {
+                //SS_LOG(SS_DEBUG, "iconv error %d:%s", errno, strerror(errno));
+                printf("iconv error %d:%s¥n", errno, strerror(errno));
+            }
+            iconv_close(cd);
+        }
+        else {
+            //SS_LOG(SS_DEBUG, "iconv_open failed");
+            printf("iconv_open failed¥n");
+        }
+        free(inbuf_hold);
+    }
+    else printf("Bad input¥n");
+#endif
+	return ret;
+}
+
+/*
+ * @ intro: For window change gbk to utf8.
+ * @ src: GBK str.
+ * @ dst: UTF8 buffer.
+ * @ len: UTF8 buffer len.
+ * @ return: -1()
+ */
+extern int gbk_to_utf8(const char* src, char* const dst, int len) 
+{
+	int ret = -1;
+#ifdef _MSC_VER
+	int strLen = 0;
+	char *strUtf8 = NULL;
+	wchar_t *strUnicode = NULL;
+	if (NULL==src || NULL==dst || len<=0 ) return ret;
+	strLen=MultiByteToWideChar(CP_ACP, 0, src, -1, NULL, 0);
+	//gbk --> unicode
+	strUnicode = malloc(sizeof(wchar_t)*strLen);
+	memset(strUnicode, 0, sizeof(wchar_t)*strLen);
+	MultiByteToWideChar(CP_ACP, 0, src, -1, strUnicode, strLen);
+	//unicode --> UTF-8
+	strLen = WideCharToMultiByte(CP_UTF8, 0, strUnicode, -1, NULL, 0, NULL, NULL);
+	if (strLen<=len) {
+		WideCharToMultiByte(CP_UTF8, 0, strUnicode, -1, dst, strLen, NULL, NULL);
+		ret = 0;
+	}
+	free(strUnicode);
+#else
+    if (src && dst && len>0)
+    {
+        iconv_t cd;
+	    size_t inlen = strlen(src)+1;
+	    size_t outlen = len;
+    	char* inbuf = (char*)malloc(inlen);
+	    char* inbuf_hold = inbuf;
+	    char* outbuf = dst;
+        memset(inbuf, 0, inlen);
+        memcpy(inbuf, src, inlen);
+
+	    cd = iconv_open("UTF-8", "GBK");
+	    if(cd != (iconv_t)-1) {
+		    ret = iconv(cd, &inbuf, &inlen, &outbuf, &outlen);
+		    if(ret != 0) {
+			    //SS_LOG(SS_DEBUG, "iconv error %d:%s", errno, strerror(errno));
+                printf("iconv error %d:%s¥n", errno, strerror(errno));
+		    }
+		    iconv_close(cd);
+	    }
+	    else {
+		    //SS_LOG(SS_DEBUG, "iconv_open failed");
+            printf("iconv_open failed¥n");
+	    }
+	    free(inbuf_hold);
+    }
+    else printf("Bad input¥n");
+#endif
+	return ret;
+}
+
 // To do: Test GBK function
 
 void Test_ascii_hex_to_char()
@@ -741,6 +864,38 @@ void Test_unicode_to_utf8()
 	printf("Test utf8Buff:%s utfLen:%d\n\n", utf8Buff, utf8Len);
 }
 
+void Test_gbk_to_utf8()
+{
+	char utf8[128];
+	char str[] = {0xbf,0xaa,0xb7,0xa2,0xc8,0xcb,0xd4,0xb1,'\0'};
+	memset(utf8, 0, sizeof(utf8));
+	printf("=== Test gbk_to_utf8=== \n");
+	printf("Test gbk:%s\n", str);
+	printfHex(str, strlen(str));
+	gbk_to_utf8(str,utf8, sizeof(utf8));
+	printf("Test utf8:%s\n", utf8);
+	printfHex(utf8, 12);
+	printf("\n");
+}
+
+void Test_utf_to_gbk()
+{
+	char str[] = {0xbf,0xaa,0xb7,0xa2,0xc8,0xcb,0xd4,0xb1,'\0'};
+	char utf8[128];
+	char gbk[128];
+	memset(gbk, 0, strlen(gbk));
+	memset(utf8, 0, sizeof(utf8));
+	printf("=== Test utf8_to_gbk=== \n");
+	printfHex(str, strlen(str));
+	gbk_to_utf8(str,utf8, sizeof(utf8));
+	printf("Test: utf8:%s\n", utf8);
+	printfHex(utf8, 12);
+	utf8_to_gbk(utf8, gbk, sizeof(gbk));
+	printf("Test gbk:%s\n", str);
+	printfHex(gbk, 8);
+	printf("\n");
+}
+
 int main(int argc, char** argv)
 {
 	if (argv[1])
@@ -766,6 +921,8 @@ int main(int argc, char** argv)
     Test_hex_char_split();
     Test_utf8_to_unicode();
 	Test_unicode_to_utf8();
+	Test_gbk_to_utf8();
+	Test_utf_to_gbk();
 	return 0;
 }
 

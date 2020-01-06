@@ -79,7 +79,7 @@ BOOL _msg_add(struct MsgEntity* entity, const char* data, int len)
 BOOL msg_add(struct MsgEntity* entity, const char* data)
 {
     if (NULL==entity || NULL==data) return FALSE;
-    _msg_add(entity, data, strlen(data));
+    _msg_add(entity, data, strlen(data)+1);
     return TRUE;
 }
 
@@ -119,8 +119,8 @@ int _msg_to_string(struct MsgEntity* entity, char** msgBuff)
     //printf("msgTotalLen :%d\n", msgTotalLen);
     // copy msg items
     if (msgTotalLen==0) return 0;
-    *msgBuff = (char*)malloc(msgTotalLen);
-    memset(*msgBuff, 0, msgTotalLen);
+    *msgBuff = (char*)malloc(msgTotalLen+1);
+    memset(*msgBuff, 0, msgTotalLen+1);
     index = msgHeadPos;
     do
     {

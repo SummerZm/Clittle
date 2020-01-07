@@ -11,7 +11,7 @@
 #include <time.h>
 
 #define MAX_MSG_ITEMS       3
-#define MSG_JSON_FORMAT     "{\"num\":\"%d\",\"timeStamp\":\"%ul\", \"msg\":\"%s\"}\r\n"
+#define MSG_JSON_FORMAT     "{\"num\":\"%d\",\"timeStamp\":\"%llu\", \"msg\":\"%s\"}\r\n"
 
 #define BOOL	int
 #define FALSE	0
@@ -55,8 +55,8 @@ BOOL _msg_add(struct MsgEntity* entity, const char* data, int len)
     struct MsgEntity* pEntity = entity;
     int pos = pEntity->cursor;
     //printf("total: %d\n", pos);
-    char* str = (char*)malloc(len);
-    memset(str, 0, len);
+    char* str = (char*)malloc(len+1);
+    memset(str, 0, len+1);
     if (NULL==str) return FALSE;
     while (pos>=MAX_MSG_ITEMS) {
         pos %= MAX_MSG_ITEMS;

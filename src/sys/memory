@@ -1,0 +1,38 @@
+A. 系统内存管理: 
+	a. 内核使用low memory来跟踪所有的内存分配，这样的话一个16GB内存的系统比一个4GB内存的系统，需要消耗更多的low memory，可能有4倍之多。
+	b. 这种额外的压力从你刚启动系统那一刻就开始存在了，因为内核结构必须为潜在的跟踪四倍多的内存分配而调整大小
+
+B. OOM Killer保护机制
+	a. Linux 在内存不足的时候不至于出太严重的问题，把无关紧要的进程杀掉，有些壮士断腕的意思。
+	b. 在32位CPU 架构下寻址是有限制的。Linux 内核定义了三个区域：
+		# DMA: 0x00000000 -  0x00999999 (0 - 16 MB) 
+		# LowMem: 0x01000000 - 0x037999999 (16 - 896 MB) - size: 880MB 
+		# HighMem: 0x038000000 - <硬件特定> 
+
+	c. OOM Killer原因
+		LowMem 区 (也叫 NORMAL ZONE ) 一共 880 MB，而且不能改变(除非用 hugemem 内核)。对于高负载的系统，就可能因为 LowMem 利用不好而引发 OOM Killer 。
+		一个可能原因是 LowFree 太少了，另外一个原因是 LowMem 里都是碎片，请求不到连续的内存区域
+
+C. 解决OOM Killer问题
+	a. 升级到64位系统 -- 所有的内存都将成为low memory。如果你在这种情况下耗尽了low memory，那就真的是out of memory了。
+	b. 受限于必须使用32位系统，最好的解决办法是使用hugemem内核。
+		这种内核以不同的方式分割low/high memory，而且在大多数情况下会提供足够多的low memory到high memory的映射。
+		在大多数案例中，这是一个很简单的修复方法：安装hugemem kernel RPM包，然后重启即可。
+
+	c.  如果运行hugemem内核也不可能，你可以尝试将/proc/sys/vm/lower_zone_protection 的值设置为250甚至更多。这将让内核愿意保护low memory，从而在分配内存时多考虑从high memory分配。
+		此选项从2.6.x内核才开始可用。必要的是，您可能需要通过一些实验来找到您系统环境中最适合的值。可以使用下面方法快速的设置和检查改值：
+
+		# cat /proc/sys/vm/lower_zone_protection 
+		# echo "250" > /proc/sys/vm/lower_zone_protection 
+		在 /etc/sysctl.conf 中加入设置，以便启动就生效：
+
+		vm.lower_zone_protection = 250
+		作为最后的努力，你可以关闭oom-killer。这个选项可以导致系统挂起，所以请小心使用（风险自负）！
+		查看当前oom-killer的状态：
+
+		# cat /proc/sys/vm/oom-kill 
+		关闭/打开oom-killer：
+
+		# echo "0" > /proc/sys/vm/oom-kill 
+		# echo "1" > /proc/sys/vm/oom-kill 
+	   当进程该被oom-killer杀死却没有被杀死时，相关信息会记录到 /var/log/messages:

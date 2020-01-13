@@ -1,0 +1,70 @@
+1. pkg-config是一个linux下的命令，用于获得某一个库/模块的所有编译相关的信息。
+	pkg-config opencv –libs –cflags
+
+2. 提供给第三方使用的库，最好写一个pc文件
+	不用第三方自己再手动写依赖了你哪些库，只需要敲一个”pkg-config [YOUR_LIB] –libs –cflags”。
+
+3  pkg-config的信息从哪里来？
+	第一种：取系统的/usr/lib下的所有*.pc文件。
+	第二种：PKG_CONFIG_PATH环境变量所指向的路径下的所有*.pc文件。
+
+4. pkg-config –list-all。查看pkg-config的所有模块信息。
+
+
+5 如何添加自己的pc文件
+	a. 把你的pc文件，直接放到/usr/lib/…默认路径下。
+	b. 把你的pc文件的路径写到PKG_CONFIG_PATH环境变量里。
+		可以在/etc/.bashrc或者/home/chenxf/.bashrc的文件末尾添加：
+
+		PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/home/chenxf/ffmpeg_build/lib/pkgconfig
+		export PKG_CONFIG_PATH
+		
+		在环境变量里，只要先source ~/.bashrc一下，让环境变量生成，也立马生效。
+		那么，pkg-config就会到/home/chenxf/ffmpeg_build/lib/pkgconfig寻找*.pc文件。
+		每次你执行pkg-config，都会去遍历所有的*.pc文件。
+
+6 如何自己写pkg-config的pc文件
+	a. 其实很简单，只需要拿别人的pc文件改一改就行了。
+	b. pc文件的所有参数：
+
+		Name: 该模块的名字，比如你的pc名字是xxxx.pc，那么名字最好也是xxxx。
+		Description: 模块的简单描述。上文pkg-config –list-all命令出来的结果，每个名字后面就是description。
+		URL: 用户可以通过该URL获得更多信息，或者下载信息。也是辅助的，可要可不要。
+		Version: 版本号。
+		Requires: 该模块有木有依赖于其他模块。一般没有。
+		Requires.private: 该模块有木有依赖于其他模块，并且还不需要第三方知道的。一般也没有。
+		Conflicts: 有没有和别的模块冲突。常用于版本冲突。比如，Conflicts: bar < 1.2.3，表示和bar模块的1.2.3以下的版本有冲突。
+		Cflags: 这个就很重要了。pkg-config的参数–cflags就指向这里。主要用于写本模块的头文件的路径。
+		Libs: 也很重要，pkg-config的参数–libs就指向这里。主要用于写本模块的库/依赖库的路径。
+		Libs.private: 本模块依赖的库，但不需要第三方知道。
+		其实必须写的只有5个。Name、Description、Version、Cflags、Libs。
+
+		我们举2个例子吧。一个动态库，一个静态库。
+		例子1 动态库的pc文件
+
+		假设我写了libfoo.so，我的库将会被安装到/usr/local/lib/，头文件会放到/usr/local/include/foo。那么，pc文件可以这么写。
+
+		prefix=/usr/local
+		exec_prefix=${prefix}
+		includedir=${prefix}/include
+		libdir=${exec_prefix}/lib
+
+		Name: foo
+		Description: The foo library
+		Version: 1.0.0
+		Cflags: -I${includedir}/foo
+		Libs: -L${libdir} -lfoo
+
+7. 静态库链接动态库时，如何使用该静态库
+	如果我有个静态库libXXX.a，它依赖了很多其他动态库libAA.so，libBB.so，那么第三方程序DD.c要使用libXXX.a时，
+	编译时还得链接libAA.so，libBB.so。如何让第三方程序，可以不用操心我这个libXXX.a到底依赖了什么？很简答，就是我的libXXX.a写一个pc文件。
+
+	在编译命令中使用 pkg-config
+	gcc test.c -o test pkg-config libavcodec libavformat libavutil --cflags --libs
+
+
+
+
+
+
+

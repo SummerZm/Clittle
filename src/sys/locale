@@ -1,0 +1,54 @@
+1. "区域"相关的环境变量
+2. locale是用来设置、查询、管理这些变量的linux命令。
+3. 在系统命令行中输入locale可以打印所有相关的环境变量以及对应的值，变量包括：
+	a. LC_CTYPE -- 语言符号及其分类
+	b. LC_NUMBERIC -- 数字
+	c. LC_COLLATE -- 比较和排序习惯
+	d. LC_TIME -- 时间显示格式
+	e. LC_MONETARY --  货币单位
+	f. LC_MESSAGES --  信息主要是提示信息,错误信息,状态信息,标题,标签,按钮和菜单等
+	g. LC_NAME -- 姓名书写方式 
+	h. LC_ADDRESS -- 地址书写方式
+	i. LC_TELEPHONE --  电话号码书写方式
+	j. LC_MEASUREMENT -- 度量衡表达方式
+	k. LC_PAPER -- 默认纸张尺寸大小
+	L. LC_IDENTIFICATION -- 对locale自身包含信息的概述
+
+4. locale认为由于区域和语言导致的不同习惯大致就是这12类，还有LANG，LANGUAGE和LC_ALL”，这三个比较特殊：
+	a. LANG是一个缺省值，所有没有显式设置值的LC_*变量都会取LANG的值。
+	b. LANGUAGE的优先级比较高，会覆盖所有设置过的LC_*的值
+	c. LC_ALL并不是一个环境变量，而是一个glibc中定义的一个宏，LC_ALL=C这样的语法实际上是调用了setlocale把所有的LC_*的变量设置了一遍，
+	   所以在终端中直接echo $LC_TIME等可以输出对应变量的值，但是echo $LC_ALL，不好意思，啥都没有，因为它压根就不是一个变量。
+
+5. 从优先级的角度，变量生效的优先顺序从高到低如下：
+	a. LANGUAGE 优先级最高，指定个人对语言环境值的主次偏好，例如zh_CN:en_US:en，冒号分隔的是多种选择。
+	b. LC_ALL 设置的值
+	c. LC_* 可设定locale各方面（category）的值，可以覆盖LANG的值。
+	d. LANG 指定默认使用的locale值
+
+6. 如何设置这些环境变量
+  	a. locale认为只要语言、地域确定了，那么表示的格式和习惯也就确定了，所以这些变量的值实际上都是设置语言、地域的值。
+	b. Linux中（Windows中格式不同）LC_*这些变量的值的格式是[language][_TERRITORY][.CODESET][@modifier]，
+		例如LC_TIME=en_US.UTF-8，其中en代表为英语，US代表美国，使用的是UTF-8编码集。
+		两个比较特殊的值是C和POSIX分别代表C标准和POSIX标准，这两种标准对于数据的显示方式、排序方式等都有各自的规定。
+		modifier是修正符，有些地方会用到，例如：de_DE@euro使用的是欧洲的排序、比较和缩进习惯，而de_DE用的是德国的标准习惯，这是两套不同的标准。
+	c. 使用locale -a可以列出本机目前可以使用的值。locale -av还可以具体查看这些值更详细的信息。
+
+7. 修改方式
+	a. 通过创建或编辑/etc/locale.conf来做系统级的设置
+	b. 通过创建或编辑~/.config/locale.conf
+	c. export LC_TIME=xxxx可以在当前shell设置某个值
+	d. localectl命令来修改，比如localectl set-locale LANG=en_US.utf8，localectl是查询和设置区域和键盘布局的命令。
+
+8. 常见问题
+	问题：locale: Cannot set LC_CTYPE to default locale: No such file or directory locale: Cannot set LC_ALL to default locale: No such file or directory
+	原因：LC_CTYPE的值没有设置正确，跨操作系统的ssh都有可能导致这个问题，如从MAC上ssh到linux，由于MAC的locale变量值的格式和linux不同，
+		ssh时又会自动去设置，会有LC_CTYPE=UTF-8的情况出现，而整个语法在linux中是错误的。
+
+	解决办法：只要输入export LC_CTYPE="en_US.utf8"即可修复
+	问题x：大部分问题都有一个通解，在终端输入export LC_ALL=C几乎可以解决一切相关的warning（注意有export哟）
+
+作者：cheerss
+链接：https://www.jianshu.com/p/368b556a32c6
+来源：简书
+简书著作权归作者所有，任何形式的转载都请联系作者获得授权并注明出处。

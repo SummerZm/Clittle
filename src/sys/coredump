@@ -1,0 +1,21 @@
+## <b>程序崩溃日志</b>##
+
+> 通过转存程序崩溃的栈帧排查问题
+
+- 打开程序崩溃转存功能 ulimted -c 1024
+	1. ulitmted 查看系统限制 [ulimted -c查看系统崩溃文件大小限制]
+	2. ulitmted -c 1024 设置系统崩溃文件大小为1024 block
+	3. ulitmted -a 查看所有限制
+	4. 永久生效,可以修改文件/etc/security/limits.conf文件.
+	5. 永久生效,可以修改文件/etc/profile文件, 加入ulimted -c 1024.
+	
+- 程序崩溃转存文件位置
+	1. 一般位置: 根目录 core.xxx文件或默认生成的core 文件保存在可执行文件所在的目录下，文件名就为core
+	2. echo "/tmp/corefile-%e-%p-%t" > /proc/sys/kernel/core_pattern 设置core文件保存在/tmp/corefile目录下，文件名格式为“core-命令名-pid-时间戳”
+	3. echo 1 > /proc/sys/kernel/core_uses_pid ，生成的 core 文件名将会变成 core.pid，其中 pid 表示该进程的 PID。
+
+- 注意：
+	1. 当core文件大小达到上限时，不再转存文件，手动需要删除.
+	2. 不能设置太小，否则不会生成.
+	3. 查看: gdb progame core.file.
+

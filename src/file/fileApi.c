@@ -26,6 +26,35 @@ int isDir(const char* file) {
 	return S_ISDIR(info.st_mode);
 }
 
+/* 
+ * #include <unistd.h>
+ * #include <fcntl.h>
+ * @Return: -1/0/1 [error/unlock/lock]
+ */
+int isFileLock(const char* file) {
+    int fd = -1;
+    struct flock lock;
+
+    if (file==NULL) {
+        return -1;
+    }
+
+    fd = open(file,O_RDWR,0666);
+    if (fd<0) {
+        return -1;
+    }
+
+    memset(lock, 0, sizeof(lock));
+    fcntl(fd, F_GETLK,&lock);
+    if (lock.l_type != F_UNLCK) {
+        return 0;
+    }
+    else {
+        return 1;
+    }
+    close(fd);
+}
+
 /* #include "unistd.h"
  * @ R_OK
  * @ W_OK

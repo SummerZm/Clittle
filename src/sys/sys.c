@@ -3,7 +3,7 @@
  > Author: Leafxu
  > Created Time: 2020年07月08日 星期三 13时37分28秒
  ************************************************************************/
-
+#include <stdio.h>
 #include <sys/sysinfo.h>
 // see: man 2 sysinfo
 // long uptime;             /* Seconds since boot */
@@ -23,6 +23,22 @@ long sysUpTime() {
         return -1;
     }
     return info.uptime;
+}
+
+unsigned long getTotalMem() {
+    struct sysinfo info;
+    if (sysinfo(&info)) {
+        return -1;
+    }
+    return info.totalram;
+}
+
+unsigned long getFreeMem() {
+    struct sysinfo info;
+    if (sysinfo(&info)) {
+        return -1;
+    }
+    return info.freeram;
 }
 
 long sysCurrTime() {
@@ -85,6 +101,63 @@ int  getFSCapacity(const char* path, unsigned long long *total, unsigned long lo
     *free = diskInfo.f_bsize * diskInfo.f_bfree;
     return ret;
 }
+
+/*
+ * cpu  426215 701 115732 2023866 27329 4 557 0 0 0 （单位：jiffies）
+ * user(426215)   用户态的CPU时间，不包含 nice值为负进程
+ * nice(701)      nice值为负的进程所占用的CPU时间
+ * system(115732) kernel时间
+ * idle(2023866)  除硬盘IO等待时间以外其它等待时间
+ * iowait(27329)  硬盘IO等待时间
+ * irq(4)         硬中断时间
+ * softirq(557)   软中断时间
+ */
+typedef struct occupy {
+	char name[20];
+	float user;
+	float nice;
+	float system;
+	float idle;
+} CPU_OCCUPY;
+
+int get_occupy(CPU_OCCUPY *o){
+	FILE *fd;
+	fd = fopen("/proc/stat", "r");
+	if (fd == NULL){
+		return -1;
+	}
+	fscanf(fd, "%s %f %f %f %f", o->name, &o->user, &o->nice, &o->system, &o->idle);
+	fclose(fd);
+    return 0;
+}
+
+void cal_occupy(CPU_OCCUPY* o, CPU_OCCUPY* n, char* cpu_used){
+	float total, idle;
+	idle = n->idle - o->idle;
+	total = n->user + n->nice + n->system + n->idle - (o->user + o->nice + o->system + o->idle);
+    sprintf(cpu_used, "%4.2f%s", 100.0 * (total - idle) / total, "%");
+}
+
+void getCpuUsageRate(const char* buff) {
+	int sleep_time = 400;
+	char cpu_used[12];
+	CPU_OCCUPY ocpu, ncpu;
+	memset(cpu_used, sizeof(cpu_used), 0);
+
+	get_occupy(&ocpu);
+	sleep_ms(sleep_time);
+	get_occupy(&ncpu);
+
+	cal_occupy(&ocpu, &ncpu, &cpu_used);
+	sprintf(buff, "%s", cpu_used);
+	return;
+}
+
+
+
+
+
+
 
 
 

@@ -1,0 +1,22 @@
+## 进程优先级设置 ##
+
+### shell 命令 ###
+```sh
+# 法1
+# nice 不会直接决定优先级，只是影响优先级
+# nice -优先级[-20, 19] 命令
+nice -5 ls
+
+# 法2
+# 重新修改进程的优先级
+# PID为1400的进程nice设为-10
+renice -10 -p 1400
+
+# 法3
+# top -> r -> pid -> priority value
+```
+
+### 系统调用 ###
+1. int nice(int inc); // Detail: man 2 nice
+2. int getpriority(int which, id_t who);
+3. int setpriority(int which, id_t who, int prio);

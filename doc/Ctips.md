@@ -92,7 +92,16 @@
 		typedef int BOOL;
 		#define BOOL int;
 	```
-
+### <b>6. 野指针问题</b> ###  
+- <b>粗心小毛病</b>
+    ```C
+        // Error - 造成指针乱飞问题 - 程序时好时坏Bug 
+        char* buff[MAX_PATH];
+        // Ok
+        char buff[MAX_PATH];
+        
+    ```
+    
 
 
 

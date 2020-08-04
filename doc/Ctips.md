@@ -53,12 +53,11 @@
     ``` 
 ### <b>4. 范围小技巧</b> ###
 -  <b>Int类型的上限</b>
-
     ```C
-        ....
-        int INT_MAX = ((unsigned)(-1))>>1;
-        if (ret>INT_MAX/10 || (ret==INT_MAX/10 && start[i] >= '8')) return -1;
-        ....
+    ....
+    int INT_MAX = ((unsigned)(-1))>>1;
+    if (ret>INT_MAX/10 || (ret==INT_MAX/10 && start[i] >= '8')) return -1;
+    ....
     ```
 ### <b>5. char常用处理</b> ###
 - <b>HEX与半字节</b>
@@ -84,13 +83,13 @@
 - <b>存储GBK内码</b>
     ```C
         // GBK:开发人员
-	    char str[] = {0xbf,0xaa,0xb7,0xa2,0xc8,0xcb,0xd4,0xb1,'\0'};
+        char str[] = {0xbf,0xaa,0xb7,0xa2,0xc8,0xcb,0xd4,0xb1,'\0'};
     ```
 - <b>常见的重定义错误</b>
 	```C
-		// 假如以下两行代码出现在不同文件中，会产生较隐秘的重定义错误
-		typedef int BOOL;
-		#define BOOL int;
+        // 假如以下两行代码出现在不同文件中，会产生较隐秘的重定义错误
+        typedef int BOOL;
+        #define BOOL int;
 	```
 ### <b>6. 野指针问题</b> ###  
 - <b>粗心小毛病</b>
@@ -101,7 +100,100 @@
         char buff[MAX_PATH];
         
     ```
-    
+### <b>7. 循坏的易错点</b>  
+- <b>细节-问题：时间跃变</b>
+    ```C
+        // 如果系统时间发生了跃变，比如：NTP时间同步, 那么整个while()逻辑都会混乱.
+        // Do something.
+        time_t curr;
+        time_t delay = 2;
+
+        // Get time.
+        time(&curr);
+        while (delay>0) {
+            // Do something.
+            // Err1：If time jump here, the while(..) may be no exit forever.
+            // Err2： You should check the return value of time().
+            delay -= time(NULL) - curr;
+        }
+    ```
+
+- <b>精度问题</b>
+    ```C
+        // Do something.
+        time_t curr;
+        time_t delay = 2;
+
+        // Get time.
+        time(&curr);
+        while (delay>0) {
+            // Do something.
+            // The following two line code may be run into error when the time cost of this loop is too short.
+            // time()函数是秒精度单位级别的，如果while循环花费的时间不足1秒，那么time(NULL)-curr恒等于0, 循环永远不退出。
+            delay -= time(NULL) - curr;
+            time(&curr);
+        }
+    ```
+
+### <b>7. 无损/合理拓展代码</b>
+- <b>无损添加逻辑</b>
+    ```c
+        // 问题1：upgrade_check()返回值不明确，无法区分升级失败和升级文件不存在
+        // 问题2：upgrade_check()除了升级还耦合目录损坏校验等其他逻辑
+        // 已知：如果存在升级文件，则升级函数upgrade_check()返回值可近似当成升级状态
+        // 拓展：能够识别升级失败，创建升级失败标志文件
+        static BOOL _checkUpgrade() {
+            BOOL isUpgradeSuccessful=FALSE;
+            if(SS_OK==upgrade_check()){
+                isUpgradeSuccessful=TRUE;
+            }
+            return isUpgradeSuccessful;
+        }
+
+        /* 错误的改法 */
+        // 改变了代码执行流程.
+        // 修改前：一定会执行upgrade_check().
+        // 修改后：当UPGRADE_FULL_PATH文件存在时才会执行upgrade_check().
+        // 如果upgrade_check()做了升级之外的工作，那么这个改动就会爆炸.
+        static BOOL _checkUpgrade(){
+            BOOL isUpgradeSuccessful=FALSE;
+            if (existfile(UPGRADE_FULL_PATH)) {
+                if(SS_OK==upgrade_check()){
+                    isUpgradeSuccessful=TRUE;
+                }
+                else {
+                    char failPidFile[MAX_PATH];
+                    PATH_PID(failPidFile, SOTFWARE_UPGRADE_FAIL_PID);
+                    createPidFile(failPidFile);
+                }
+            }
+            return isUpgradeSuccessful;
+        }
+
+        /* 拓展后代码 */
+        // 原则：对于实现不明的接口，只增不减，尽量避免修改原代码流程
+        static BOOL _checkUpgrade(){
+            char failPidFile[MAX_PATH];
+            // 严谨1：是否有升级文件【必须将当前状态存起来：保证函数内部状态的一致性，不要多处多次获取】
+            BOOL isNeedUpgrade = existfile(UPGRADE_FULL_PATH);
+            BOOL isUpgradeSuccessful=FALSE;
+            PATH_PID(failPidFile, SOTFWARE_UPGRADE_FAIL_PID);
+            // 严谨2：如果有残留的标志文件，则清除
+            if (isNeedUpgrade && existfile(failPidFile)) {
+                deletefile(failPidFile);
+            }
+            // 严谨3：上面拓展的代码并不会影响upgrade_check()执行
+            if(SS_OK==upgrade_check()){
+                isUpgradeSuccessful=TRUE;
+            }
+            else {
+                // 呼应严谨1：这里的必须使用isNeedUpgrade，不能用existfile(UPGRADE_FULL_PATH)，因为上面存在deletefile操作。
+                // 保证函数内部状态的一致性
+                if (isNeedUpgrade && !existfile(failPidFile)) { createPidFile(failPidFile); }
+            }
+            return isUpgradeSuccessful;
+        }
+    ```
 
 
 

@@ -9,7 +9,7 @@
     (utf8Word[i]&0xC0) != 0x80  // Error - unsgin question.
     ....
 ```
-### <b>2. HEX 与 Ascii 转换</b> ###
+### 2. HEX 与 Ascii 转换 ###
 ```C
     ....
     if (asciiHex>='a' && asciiHex<='f') return (unsigned char)(asciiHex-87);
@@ -50,7 +50,7 @@
         // 网络转主机 ntohl();ntohs();
         // l => long;   s => short;
         ....
-    ``` 
+    ```
 ### <b>4. 范围小技巧</b> ###
 -  <b>Int类型的上限</b>
     ```C
@@ -61,15 +61,17 @@
     ```
 ### <b>5. char常用处理</b> ###
 - <b>HEX与半字节</b>
+    
     ```C
-    unsigned char hex_char_merge(unsigned char chH, unsigned char chL) { return chH<<4 | chL; }
-
+unsigned char hex_char_merge(unsigned char chH, unsigned char chL) { return chH<<4 | chL; }
+    
     void hex_char_split(unsigned char Ch, unsigned char* chH, unsigned char* chL) 
     { 
         *chH = Ch >> 4;
         *chL = Ch & 0x0F;
     }
     ```
+    
 - <b>Char 位操作</b>
     ```C
         ....
@@ -80,19 +82,25 @@
         // ch | 0x80 用 | 操作设高4位
         ....
     ```
+    
 - <b>存储GBK内码</b>
     ```C
         // GBK:开发人员
         char str[] = {0xbf,0xaa,0xb7,0xa2,0xc8,0xcb,0xd4,0xb1,'\0'};
     ```
+    
+    
+    
 - <b>常见的重定义错误</b>
-	```C
-        // 假如以下两行代码出现在不同文件中，会产生较隐秘的重定义错误
+
+    ```c
+      // 假如以下两行代码出现在不同文件中，会产生较隐秘的重定义错误
         typedef int BOOL;
         #define BOOL int;
-	```
+    ```
 ### <b>6. 野指针问题</b> ###  
 - <b>粗心小毛病</b>
+    
     ```C
         // Error - 造成指针乱飞问题 - 程序时好时坏Bug 
         char* buff[MAX_PATH];
@@ -101,13 +109,33 @@
         
     ```
 ### <b>7. 循坏的易错点</b>  
-- <b>细节-问题：时间跃变</b>
+
+- **环境问题**
+
+  ```c
+  // 进程运行环境变量与其父进程有密切的关系。当进程执行shell命令失败时，可以打印其PATH环境变量(一般从父进程继承而来)
+  #include <stdio.h>
+  extern char** environ;
+  int main()
+  {
+      int cursor = 0;
+      for(cursor = 0; environ[cursor] != NULL; cursor++)
+      {
+          printf("%s\n",environ[cursor]);
+      }
+  }
+  ```
+
+  
+
+- <b>细节问题：时间跃变</b>
+
     ```C
         // 如果系统时间发生了跃变，比如：NTP时间同步, 那么整个while()逻辑都会混乱.
         // Do something.
         time_t curr;
         time_t delay = 2;
-
+    
         // Get time.
         time(&curr);
         while (delay>0) {
@@ -118,12 +146,15 @@
         }
     ```
 
+    
+
 - <b>精度问题</b>
+
     ```C
         // Do something.
         time_t curr;
         time_t delay = 2;
-
+    
         // Get time.
         time(&curr);
         while (delay>0) {

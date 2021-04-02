@@ -5,10 +5,28 @@ void printfArray(int* arr, int len)
 {
 	if (arr!=NULL && len>0)
 	{
-		printf("[");
+		printf("[ ");
 		for (int i=0; i<len; i++)
 			printf("%d ", arr[i]);
-		printf("]\n");
+		printf(" ]\n");
+	}
+}
+
+void printfMatrix(int** arr, int n, int m)
+{
+	if (arr!=NULL &&  n>0 && m>0)
+	{
+		int (*_arr)[3] = (int*)arr;
+		for (int i=0; i<n; i++) 
+		{	
+			printf("[ ");
+			for (int j=0; j<m; j++) 
+			{
+				printf("%d ", _arr[i][j]);
+			}
+			printf("]\n");
+		}
+		printf("\n");
 	}
 }
 
@@ -32,9 +50,9 @@ void twoPointer()
 {
 	int data[] = {1,2,3,4,5,6,7,8,9};
 	int len = sizeof(data)/sizeof(int);
-	printf("Input data: ");
+	printf("In: ");
 	printfArray(data, 9);
-	printf("Output data: \n");
+	printf("Out: \n");
 	for (int i=0; i<len; i++) 
 	{
 		int cur = i;
@@ -50,15 +68,83 @@ void twoPointer()
 	}
 }
 
+/* 
+	Matrix point print. 
+	Mod: should be 0/1
+*/
+void MatrixPointPrint(int mod)
+{
+	int cnt=0;
+	int data[3][3] = {{1,3,5},{2,4,6},{7,8,9}};
+	printfMatrix(data,3,3);
+	for (int i=0; i<3; i++)
+	{
+		printf("[ ");
+		for (int j=0; j<3; j++)
+		{
+			cnt++;
+			if (cnt%2==mod)
+				printf("%d ", data[i][j]);
+			else
+				printf("  ", data[i][j]);
+		}
+		printf("]\n");
+	}
+}
+
+void MatrixPointPrint1(int mod)
+{
+	int cnt=0;
+	int data[3][3] = {{1,3,5},{2,4,6},{7,8,9}};
+	printfMatrix(data,3,3);
+	for (int i=0; i<3; i++)
+	{
+		printf("[ ");
+		for (int j=0; j<3; j++)
+		{
+			if (j%2==mod)
+				printf("%d ", data[i][j]);
+			else
+				printf("  ", data[i][j]);
+		}
+		printf("]\n");
+	}
+}
+
+void MatrixPointPrint2(int mod)
+{
+	int cnt=0;
+	int data[3][3] = {{1,3,5},{2,4,6},{7,8,9}};
+	printfMatrix(data,3,3);
+	for (int i=0; i<3; i++)
+	{
+		printf("[ ");
+		for (int j=0; j<3; j++)
+		{
+			if (j%2==mod)
+				printf("%d ", data[i][j]);
+			else
+				printf("  ", data[i][j]);
+		}
+		printf("]\n");
+	}
+}
+
 int main(int argc, char** argv)
 {
 	/* printf matix. */
-	printf("Normal scan: \n");
+	printf(">>>> Normal scan <<<<\n");
 	normal(10, 10);
 	printf("\n");
-	printf("3-sum scan:\n");
+	printf(">>>> 3-sum scan <<<<\n");
 	twoPointer();
 	printf("\n");
+	printf(">>>> Matrix point print <<<<\n");
+	MatrixPointPrint(1);
+	printf("\n=========\n\n");
+	MatrixPointPrint1(0);
+	printf("\n=========\n\n");
+	MatrixPointPrint2(0);
 	return 0;
 }
 

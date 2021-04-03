@@ -130,6 +130,74 @@ void MatrixPointPrint2(int mod)
 	}
 }
 
+void ArrayRotate()
+{
+	int mod = 15;
+	int data[] = {1,2,3,4,5,6,7,8,9};
+	printf("\n>>>>>> ArrayRotate mod[6] <<<<<<<\n");
+	printfArray(data, 9);
+
+	int len  = 9;
+	int count = 0;
+	mod %= len;
+	int history[9] = {-1,-1,-1,-1,-1,-1,-1,-1,-1};
+	for (int i=0; count<9; i++)
+	{
+		int prev = data[i];
+		int curr = i;
+		do 
+		{
+			int next = (curr+mod)%len;
+			int tmp = data[next];
+			data[next] = prev;
+			prev = tmp;
+			curr = next;
+			count++;
+
+			/**/
+			history[curr] = 1;
+			
+			printf("[ ");
+			for (int k=0; k<len; k++)
+			{
+				/*	
+				// Display 1
+				if (k==curr)
+				{
+					printf(" %d ", data[k]);
+				}
+				else
+				{
+					printf(" - ");
+				}
+				*/
+				/*  
+				// Display 2
+				if (history[k]==1) {
+					printf("<%d>", data[k]);
+				}
+				else 
+				{
+					printf(" %d ", data[k]);
+				}
+				*/
+				// Display 3
+				if (history[k]==1) {
+					printf("%d ", data[k]);
+				}
+				else 
+				{
+					printf("- ");
+				}
+			}
+			printf(" ] pos[%d] temp[%d] loop[%d]\n",curr, prev, count);
+
+		}while(i!=curr);
+		// printfArray(data, 9);
+	}
+	printfArray(data, 9);
+}
+
 int main(int argc, char** argv)
 {
 	/* printf matix. */
@@ -145,6 +213,7 @@ int main(int argc, char** argv)
 	MatrixPointPrint1(0);
 	printf("\n=========\n\n");
 	MatrixPointPrint2(0);
+	ArrayRotate();
 	return 0;
 }
 

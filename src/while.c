@@ -198,6 +198,18 @@ void ArrayRotate()
 	printfArray(data, 9);
 }
 
+void reverse(int* arr, int s, int e, int len) {
+    if (e>len) return;
+    int m = (s + e) / 2;    // Get mid value
+    for (int i=s; i<=m; i++) {
+        int temp = arr[i];
+        arr[i] = arr[e-i+s-1];
+        arr[e-i+s-1] = temp;
+		printfArray(arr, 10);
+    }
+    return;
+}
+
 int main(int argc, char** argv)
 {
 	/* printf matix. */
@@ -214,6 +226,12 @@ int main(int argc, char** argv)
 	printf("\n=========\n\n");
 	MatrixPointPrint2(0);
 	ArrayRotate();
+
+	printf("\n>>>>> Reverse arr <<<<<\n");
+	int data[] = {1,2,3,4,5,6,7,8,9, 10};
+	printfArray(data, 10);
+	reverse(data, 0, 9, 10);
+	printfArray(data, 10);
 	return 0;
 }
 

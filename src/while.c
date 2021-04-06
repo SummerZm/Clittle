@@ -57,10 +57,10 @@ void twoPointer()
 	{
 		int cur = i;
 		int l = cur+1;
-		int r = len;
+		int r = len-1;
 		printf("[%d] ", i);
 		while (l<r) {
-			printf("%d--><--%d ", l, r);
+			printf("%d--><--%d ", data[l], data[r]);
 			l++;	
 			r--;
 		} 
@@ -95,12 +95,12 @@ void MatrixPointPrint(int mod)
 void MatrixPointPrint1(int mod)
 {
 	int cnt=0;
-	int data[3][3] = {{1,3,5},{2,4,6},{7,8,9}};
-	printfMatrix(data,3,3);
-	for (int i=0; i<3; i++)
+	int data[5][5] = {{1,3,5,7,8},{2,4,6,0,4},{1,2,3,4,5},{7,8,9,1,3},{9,8,7,6,5}};
+	printfMatrix(data,5,5);
+	for (int i=0; i<5; i++)
 	{
 		printf("[ ");
-		for (int j=0; j<3; j++)
+		for (int j=0; j<5; j++)
 		{
 			if (j%2==mod)
 				printf("%d ", data[i][j]);
@@ -118,15 +118,117 @@ void MatrixPointPrint2(int mod)
 	printfMatrix(data,3,3);
 	for (int i=0; i<3; i++)
 	{
+		if (i%2==mod) 
+		{
+			printf("[ ");
+			for (int j=0; j<3; j++) 
+			{
+				printf("  ");
+			}
+			printf("]\n");
+			continue;
+		}
 		printf("[ ");
 		for (int j=0; j<3; j++)
 		{
-			if (j%2==mod)
-				printf("%d ", data[i][j]);
-			else
-				printf("  ", data[i][j]);
+			printf("%d ", data[i][j]);
 		}
 		printf("]\n");
+	}
+}
+
+void MatrixPointPrint3()
+{
+	int data[8][8] = {
+		{1,1,1,1,1,1,1,1},
+		{1,1,1,1,1,1,1,1},
+		{1,1,1,1,1,1,1,1},
+		{1,1,1,1,1,1,1,1},
+		{1,1,1,1,1,1,1,1},
+		{1,1,1,1,1,1,1,1},
+		{1,1,1,1,1,1,1,1},
+		{1,1,1,1,1,1,1,1}
+	};
+	printfMatrix(data, 8, 8);
+	for (int i=0; i<8; i++)
+	{
+		printf("[ ");
+		for (int j=0; j<8; j++)
+		{
+			if (i%2==0&& j%2==0)
+			{
+				printf("%d ", data[i][j]);
+			}
+			else
+			{
+				printf("- ", data[i][j]);
+			}
+		}
+		printf("]\n");
+	}
+	
+}
+
+void MatrixPointPrint4()
+{
+	int data[8][8] = {
+		{1,1,1,1,1,1,1,1},
+		{1,1,1,1,1,1,1,1},
+		{1,1,1,1,1,1,1,1},
+		{1,1,1,1,1,1,1,1},
+		{1,1,1,1,1,1,1,1},
+		{1,1,1,1,1,1,1,1},
+		{1,1,1,1,1,1,1,1},
+		{1,1,1,1,1,1,1,1}
+	};
+	printfMatrix(data, 8, 8);
+	for (int i=0; i<8; i++) 
+	{
+		printf("[ ");
+		for (int j=0; j<8; j++)
+		{
+			if (i%2==1 && j%2==1)
+			{
+				printf("%d ", data[i][j]);
+			}
+			else
+			{
+				printf("- ");
+			}
+		}
+		printf(" ]\n");
+	}
+}
+
+void printfDiagonal()
+{
+	int data[8][8] = {
+		{1,1,1,1,1,1,1,1},
+		{1,1,1,1,1,1,1,1},
+		{1,1,1,1,1,1,1,1},
+		{1,1,1,1,1,1,1,1},
+		{1,1,1,1,1,1,1,1},
+		{1,1,1,1,1,1,1,1},
+		{1,1,1,1,1,1,1,1},
+		{1,1,1,1,1,1,1,1}
+	};
+	printfMatrix(data, 8, 8);
+	int len = 8;
+	for (int i=0; i<len; i++) 
+	{
+		printf("[ ");
+		for (int j=0; j<len; j++)
+		{
+			if (i-j==0 || j==len-1-i)
+			{
+				printf("%d ", data[i][j]);
+			}
+			else
+			{
+				printf("- ");
+			}
+		}
+		printf(" ]\n");
 	}
 }
 
@@ -135,6 +237,7 @@ void ArrayRotate()
 	int mod = 15;
 	int data[] = {1,2,3,4,5,6,7,8,9};
 	printf("\n>>>>>> ArrayRotate mod[6] <<<<<<<\n");
+	printf("旋转数组\n");
 	printfArray(data, 9);
 
 	int len  = 9;
@@ -214,20 +317,32 @@ int main(int argc, char** argv)
 {
 	/* printf matix. */
 	printf(">>>> Normal scan <<<<\n");
+	printf("普通双层循环打印:\n");
 	normal(10, 10);
 	printf("\n");
 	printf(">>>> 3-sum scan <<<<\n");
+	printf("排好序解决3数问题:\n");
 	twoPointer();
 	printf("\n");
 	printf(">>>> Matrix point print <<<<\n");
+	printf("打印矩阵中的偶数个数\n");
 	MatrixPointPrint(1);
-	printf("\n=========\n\n");
+	printf("\n\n");
+	printf("打印矩阵中的每一行的第偶个数\n");
 	MatrixPointPrint1(0);
-	printf("\n=========\n\n");
+	printf("\n\n");
+	printf("\n打印矩阵中的第偶数行\n");
 	MatrixPointPrint2(0);
+	printf("\n打印矩阵左上值\n");
+	MatrixPointPrint3();
+	printf("\n打印矩阵右下值\n");
+	MatrixPointPrint4();
+	printf("\n打印矩阵对角线\n");
+	printfDiagonal();
 	ArrayRotate();
 
 	printf("\n>>>>> Reverse arr <<<<<\n");
+	printf("翻转指定区域数组\n");
 	int data[] = {1,2,3,4,5,6,7,8,9, 10};
 	printfArray(data, 10);
 	reverse(data, 0, 9, 10);

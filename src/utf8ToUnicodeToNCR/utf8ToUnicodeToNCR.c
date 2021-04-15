@@ -454,7 +454,8 @@ unsigned char hex_char_merge(unsigned char chH, unsigned char chL) { return chH<
 
 void hex_char_split(unsigned char Ch, unsigned char* chH, unsigned char* chL) 
 { 
-    *chH = Ch >> 4;
+    // *chH = (Ch >> 4) & 0x0F; // If Ch is char, we need to '&0x0F';
+    *chH = Ch >> 4; 
     *chL = Ch & 0x0F;
 }
 

@@ -1,0 +1,130 @@
+MAC简介 
+	(http://www.elecfans.com/news/wangluo/20180315647693_a.html)
+　　MAC即媒体介入控制层，属于OSI模型中数据链路层下层子层。它定义了数据帧怎样在介质上进行传输。
+	在共享同一个带宽的链路中，对连接介质的访问是“先来先服务”的。
+	物理寻址在此处被定义，逻辑拓扑（信号通过物理拓扑的路径）也在此处被定义。
+	线路控制、出错通知（不纠正）、帧的传递顺序和可选择的流量控制也在这一子层实现。
+	
+	MAC地址又称为硬件地址或者是物理地址，其实是指局域网上的每一台计算机中固化在适配器的ROM中的地址。
+	目前所采用的MAC地址一般是6字节的48位的长度，所谓的MAC地址，实际上就是适配器地址。
+
+　　MAC协议的种类
+		多个用户，多址接入的核心问题就是：对于一个信道，多个用户产生竞争的时候，如何采用一些协调机制，也就是采用何种MAC协议。
+		例如两种极端的MAC协议:
+			一种是完全自由的方式，用户自由发送，但是要解决一个问题是碰撞后如何办，
+			一种是完全排序，每个用户都被规定了详细的规则来发送，接收包。
+		但是，实际上不可能这样的，因为MAC协议，主要决定了通信的吞吐量、延迟等性能，所以，这块是非常重要的，是多种方式的结合。
+	
+	MAC协议主要分为以下三类
+		1. 固定分配信道。信道基本上可以分为频分、时分、码分、空分，每个用户都被固定的分配了一个信道，这种方式实时性很高，但是有浪费。主要是面向语音。例如FDMA（电话）、TDMA（GSM）、CDMA.
+		2. 随机分配信道。。主要是面向数据。例如ALOHA，CSMA就是随机分配的典型例子。
+		3. 按需分配信道。根据用户的要求，按照需求分配信道，例如802.16就是按照需求分配信道。主要是面型多媒体。
+
+　　MAC帧格式
+　　1. FrameControl字段  [In mac header]
+		-ProtocolVersion：目前为0
+		-Type：帧类别，有下面三种，每个类别又有一些子类别（见Subtype）
+			00：管理帧（ManagementFrame）
+			01：控制帧（ControlFrame）
+			10：数据帧（DataFrame）
+			11：保留未使用
+			
+		-Subtype：帧子类别，与Type共同来决定一个帧的类型，详细如下表所示
+		-ToDS/FromDS：指示帧目的地是否为DS（分布式系统），可以简单地理解为是否【发往/来自】AP
+		-Morefragments：指示是否还有分片（除去最后一个分片）
+		-Retry：指示当前帧是否为重传帧，接收方收到后会删掉重复帧
+		-Powermanagement：指示STA的电源管理模式，1表示STA在数据交换完成后进入省电（Power-Save）模式，对于AP恒为0
+		-Moredata：指示AP为进入省电模式的STA进行帧缓存（来自DS）
+		-WEP：指示framebody是否使用WEP加密
+		-Order：指示将进行严格次序（StrictlyOrdered）传送
+
+　　2、其他字段 [In mac header]
+		-DuraTIon/ID：可以用在下面三个场景中
+			@1DuraTIon，第15位置0，用于设定NAV，数值代表预计使用介质的微秒数
+			@2在CFP帧中，第14位置0，第15位置1，其他值为0，字段值为32768，让其他没有收到Beacon帧的STA公告无竞争周期
+			@3在PS-Poll（省电-轮询）帧中，第14、15位同时置1，用于从省电模式醒来的STA发送AID（关联标识符）以取得在AP中的缓存帧
+
+		-Address：有以下几种类型，由帧类型决定使用哪几个地址字段，通常有三个，SA、DA和BSSID
+			BSSID，基本服务集标识符
+			DA，目的地址
+			SA，源地址
+			RA，接收端地址
+			TA，发送端地址
+
+		-SequenceControl：包含两个子字段，4位的分片编号（FragmentNumber）和12位的顺序编号（SequenceNumber）
+　　		顺序编号4096的模数，从0开始，每处理一个上层封包就加1, 若上层封包分片处理，所有帧分片采用相同顺序编号
+			对于重传帧，顺序编号不变
+
+		-FrameBody：帧主体也称数据字段（Datafield），用于传递上层有效载荷（Payload），可为0
+		-FCS：帧校验序列，采用循环冗余校验（CRC）码，计算范围包括MAC头中所有字段及帧主体
+
+　　3、帧主体数据 [In mac body]
+		
+		-- 802.11的FrameBody以802.2的逻辑链路控制（LLC）来封装不同类型的网络协议，有两种封装方式：RFC1042、802.1H.
+		-- 以太网V2的MAC帧格式（MAC格式标准有两个，一个是DIXEthernetV2标准，一个是IEEE的802.3标准）
+			第一个地段的6个字节放置的是目的地址
+			第二个字段的6个字节放置的内容是源地址
+			第三个字段的2个字节放置的内容是类型，用来标识上一层使用的是什么协议，比如0800是IP协议，0806是ARP协议，8035是RARP协议
+			第四个字段是数据字段，它的长度是46–1500字节，如果数据的长度不满46字节，MAC帧就会加入一些数据进行填充
+			最后一个字段是4个字节是帧检验序列，使用了CRC校验。
+			因为MAC帧并没有一个字段用来标识数据的长度，解决这个问题使用了一种曼彻斯特编码
+
+MAC的修改地址
+
+　　通用修改
+　　需要根据MAC芯片型号联系厂家拿到对应的固件刷写工具，以及MAC地址文件，其中MAC地址是需要向IEEE联盟购买有效段的
+	并是唯一的，如果出现重复的则会报IP地址重复的错误而导致相同MAC地址的计算机网络访问异常。
+
+　　	方法1、修改MAC的方法：在/etc/rc.d/init.d/中的network中加入ifconfigeth0hwetherxx:xx:xx:xx:xx:xx（MAC）然后重启。
+　　	方法2、也可以将/sbin/ipconfigeth0hwetherMACaddr加入到/etc/rc.local中去。
+
+
+	显示相关网络数据
+　　	方法1、输入：ifconfig
+　　	方法2、输入：ifconfig|grep“inet”|cut-c0-36|sed-e‘s/［a-zA-Z：］//g’
+　　	方法3、输入：hostname-i
+　　	方法4、输入：netstat-r
+　　	方法5、输入：cat/etc/resolv.conf
+
+
+MAC层的主要功能
+
+　　1、载波监听（CarrierSense）
+		STA有两种方法来判断当前介质是否空闲
+　　		-检查PHY层，是否有carrier存在
+　　		-使用虚拟carrier-sense功能，NAV（NetworkAllocationVector）
+
+			NAV是MAC层提供的一种定时器，保存了其他STA使用介质的持续时间
+			其他STA发送的数据中带有的Duration大于所保存的时间时，STA就更新自己的NAV
+　　		当NAV为0并且PHY层指示当前介质可用时，STA才能发送数据
+
+　　2、DCF DistributedCoordinaTIonFuncTIon。（分布式协调功能）
+		DCF是基于CSMA/CA的接入方法，尽可能避免冲突，可以自动高效地共享介质
+		DCF提供基本模式和RTS/CTS模式两种介质访问方式
+		利用竞争窗口的二进制指数回退机制协调多个STA对共享链路的访问，避免出现因争抢介质而无法通信的情况
+		其核心思想是利用二进制指数回退机制减轻数据分组的碰撞以及实现发生碰撞后对分组的有限重传控制
+
+　　3、应答帧
+		某些帧需要接收STA回应一个应答帧，称为ACK帧
+		ACK帧的传输不需要等待backofftimer，而是等待SIFS（ShortInterframeSpace）时间
+		SIFS通常比DIFS少2个slottime
+
+　　4、隐藏节点问题和RTS/CTS
+　　	RTS：Requesttosend -- STA发送RTS帧，预约介质的使用权和要求接收STA保持沉默
+　		CTS：Cleartosend -- 接收STA以CTS应答，CTS帧要求附近的STA保持沉默直到过程结束
+		RTS/CTS通常用在高用量的环境下以及传输竞争比较显著的场合
+
+　　5、帧分片（FrameFragmentation）
+	　　帧分片的作用在于提高无线介质中传输的可靠性
+	　　-帧分片只发生在单播帧中
+	　　-每个分片帧具有相同的帧序列号和递增的帧编号
+
+　　6、PCF PointCoordinationFunction。（点协调功能）
+		PCF作为DCF的补充，是一种可选的介质访问机制，提供了不必通过竞争即可使用介质的服务，为了满足实时业务需求
+		用于Infrastructure模式网络架构中，由AP进行协调
+		
+		PCF以周期的形式进行帧的传输，每个周期包括一个无竞争阶段和一个竞争阶段
+		　-无竞争阶段（CFP：Contention-FreePeriod） --  CFP阶段传输实时业务，PCF起作用
+		　-竞争阶段（CP：ContentionPeriod） --  CP阶段传输非实时业务，DCF起作用
+
+　　		

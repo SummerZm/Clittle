@@ -80,6 +80,47 @@ int getInterfaceByIndex(char* ifName, int len, int index) {
     return ret;
 }
 
+/* Output: interfacename1|interfacename2 */
+void getInferfacesName(char *nameBuff, int len)
+{
+	int avalible = len;
+	struct ifaddrs *ifAddrStruct_list, *ifAddrStruct = NULL;
+	if (len<=0 || nameBuff==NULL)
+	{
+		printf("getInferfacesName len=0\n");
+		return;
+	}
+	getifaddrs(&ifAddrStruct_list);
+	ifAddrStruct = ifAddrStruct_list;
+	while (ifAddrStruct != NULL)
+	{
+		int ifa_nameLen = 0;
+        if (ifAddrStruct->ifa_name == NULL) 
+		{
+			printf("ifa_name is null! skip.");
+		    ifAddrStruct=ifAddrStruct->ifa_next;
+			continue;
+		}
+		if (ifAddrStruct->ifa_addr->sa_family != AF_INET) 
+		{
+		    ifAddrStruct=ifAddrStruct->ifa_next;
+			continue;
+		}
+		ifa_nameLen = strlen(ifAddrStruct->ifa_name);
+		if (avalible <= ifa_nameLen+1)
+		{
+			printf("Buffer is no enough! exit\n");
+			break;
+		}
+		sprintf(nameBuff+len-avalible, "%s|", ifAddrStruct->ifa_name);
+		avalible -= ifa_nameLen+1;
+		ifAddrStruct=ifAddrStruct->ifa_next;
+	}
+	freeifaddrs(ifAddrStruct_list);
+	*(nameBuff+len-avalible-1) = '\0';
+    return;
+}
+   
 int main(int argc, char** argv) {
     printfInterfaceName();
     char ifName[10];

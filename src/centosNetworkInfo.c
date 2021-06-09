@@ -2,6 +2,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
+#include <errno.h>
 #include <ifaddrs.h>
 #include <netinet/in.h>  /* For INET_ADDRSTRLEN*/
 #include <arpa/inet.h>   /* For inet_ntop(...) */
@@ -9,6 +10,43 @@
 #define BOOL int
 #define TRUE 1
 #define FALSE 0
+
+int executeCMD(const char *cmd, char* buff, int len) {
+	int rbytes=0, total=len, ret=-1;
+	FILE *pfd=NULL;
+	if(cmd==NULL || buff==NULL || len<=0) {
+		return ret;
+	}
+
+	memset(buff, 0, len);
+	if( (pfd=popen(cmd, "r")) != NULL) {
+		while (len>sizeof(char)) {
+			errno = 0;
+			rbytes=fread(buff+total-len, sizeof(char), len, pfd);
+			// printf("cmd[%s] \ndata [%s] len:[%d] rbytes:[%d] \nerrno[%d]", cmd, buff, len, rbytes, errno);
+			if (rbytes==0) {
+				if (errno!=0) {
+            		printf("cmd %s failed %s", cmd, strerror(errno));
+					ret = -1;
+					break;
+				}
+				else {
+					ret = strlen(buff);
+					break;
+				}
+			}
+			len -= rbytes;
+		}
+
+		if(pclose(pfd)==-1) {
+            printf("cmd %s failed %s", cmd, strerror(errno));
+        };
+	}
+    else {
+        printf("cmd %s failed %s", cmd, strerror(errno));
+    }
+	return ret;
+}
 
 /* Output: interfacename1|interfacename2|... */
 void getInferfacesName(char *nameBuff, int len)
@@ -228,6 +266,101 @@ int setIpByInterfacesName(char* interfaceName, char* ip)
 	return 1;
 }
 
+
+BOOL getNetworkInfoByFacesName(char* interfaceName, char* networkInfoKey,  char* networkInfoVal, int len)
+{
+    char cmd[256];
+    char interfaceFile[256];
+	char* interfacePath = "/etc/sysconfig/network-scripts/ifcfg-";
+	char* cmdTemplate = "cat %s | grep %s | awk 'BEGIN{FS=\"=\"}{print $2}'";
+	memset(cmd, 0, sizeof(cmd));
+	memset(interfaceFile, 0, sizeof(interfaceFile));
+
+	if (interfaceName==NULL || networkInfoVal==NULL || networkInfoKey==NULL) 
+	{
+		return FALSE;
+	}
+	sprintf(interfaceFile, "%s%s", interfacePath, interfaceName);
+	sprintf(cmd, cmdTemplate, interfaceFile, networkInfoKey);
+	printf("%s\n", cmd);
+    executeCMD(cmd, networkInfoVal, len);
+    *(networkInfoVal+strlen(networkInfoVal)-1) = '\0';
+    printf("%s [%s]\n", networkInfoKey, networkInfoVal);
+    return TRUE;
+}
+
+BOOL getNetworkMaskStr(char* strPrefix, char* netmaskStr, int len)
+{
+    int loop = 0;
+    int prefix = 0;
+    if (strPrefix==NULL || netmaskStr==NULL || len<=0)
+    {
+        return FALSE;
+    }
+    memset(netmaskStr, 0, len);
+    prefix = atoi(strPrefix);
+    while (prefix-8>=0) 
+    {
+        strcat(netmaskStr, "255.");
+        prefix-=8;
+        loop++;
+        if (prefix==0) break;
+    }
+    if (loop<4) 
+    {
+        switch(prefix)
+        {
+            case 0:
+                strcat(netmaskStr, "0.");
+                break;
+            case 1:
+                strcat(netmaskStr, "1.");
+                break;
+            case 2:
+                strcat(netmaskStr, "3.");
+                break;
+            case 3:
+                strcat(netmaskStr, "7.");
+                break;
+            case 4:
+                strcat(netmaskStr, "15.");
+                break;
+            case 5:
+                strcat(netmaskStr, "31.");
+                break;
+            case 6:
+                strcat(netmaskStr, "63.");
+                break;
+            case 7:
+                strcat(netmaskStr, "127.");
+                break;
+        }
+        loop++;
+        while (loop<4) 
+        {   
+            strcat(netmaskStr, "0.");
+            loop++;
+        }
+        *(netmaskStr+strlen(netmaskStr)-1) = '\0';
+    }
+    printf("network mask: %s\n", netmaskStr);
+    return TRUE;
+}
+
+void Test_getNetworkInfoByFacesName()
+{
+ //BOOL getNetworkInfoByFacesName(char* interfaceName, char* networkInfoKey,  char* networkInfoVal, int len)
+   char networkInfoVal[64];
+   char networkmask[64];
+   memset(networkInfoVal, 0, sizeof(networkInfoVal));
+   getNetworkInfoByFacesName("ip", "IPADDR", networkInfoVal, sizeof(networkInfoVal));
+   getNetworkInfoByFacesName("ip", "DNS1", networkInfoVal, sizeof(networkInfoVal));
+   getNetworkInfoByFacesName("ip", "DNS2", networkInfoVal, sizeof(networkInfoVal));
+   getNetworkInfoByFacesName("ip", "PREFIX1", networkInfoVal, sizeof(networkInfoVal));
+   getNetworkMaskStr(networkInfoVal, networkmask, sizeof(networkmask));
+   getNetworkInfoByFacesName("ip", "GATEWAY", networkInfoVal, sizeof(networkInfoVal));
+}
+
 int main(int argc, char** argv)
 {
     char ip[36];
@@ -236,6 +369,7 @@ int main(int argc, char** argv)
     printf("%s\n", ip);
     setNetworkInfoByFacesName("ip", "192.168.3.221", "192.168.3.221", "255.255.0.0", "192.168.3.221", "192.168.3.221");
     getIpByInterfaceName(ip, sizeof(ip), "enp2s0");
+	Test_getNetworkInfoByFacesName();
     return 0;
 }
 

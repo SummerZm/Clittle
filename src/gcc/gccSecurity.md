@@ -83,3 +83,45 @@
 ![./image/stack_protect.png](./image/stack_protect.png)  
 ![./image/stack_protect_2.png](./image/stack_protect_2.png)  
 
+### **C. 堆栈不可执行（-Wl,-z,noexecstack）**
+- **堆栈不可执行历史背景**
+    1. GNU/Linux系统级攻防在历史上曾经停留在用户空间很长的时间，经历了NX/COOKIE/PIE/ASLR/RELRO的进化后， “researcher”们已经无法通过用户空间触及到“上帝宝藏”(-_root_-)
+    2. sgrakkyu和twzi在Phrack Issue 64中的Attacking the Core标志着这个领域正式进入了内核层面的对抗
+    3. 10年过去了，在新的时代性背景下（Android/IoT/TEE），人们意识到安全应该是一个整体（again?WTH），而单纯依赖于内核层面的攻防无法解决很多老问题
+    4. 传统的mitigation技术再次在某些场景化的方案中受到重视，NX（armv6中是XN）是其中之一。
+    5. 这篇文档详细的分析了GCC/ld/kernel三个层面的NX的工作路线图。
+
+- **问题描述**
+    1. 在计算机安全领域一个很经典的话题就是缓冲区溢出(Buffer Overflow)  
+    2. 缓冲区溢出一般时 候伴随着攻击者的篡改堆栈里保存的返回地址,然后执行注入到stack中的shellcode  
+    3. 攻击者可以发挥想象力仔细编写shellcode进行下一步的攻击,直到完全控制了计算机  
+
+- **问题处理方略**
+    1. compiler-assembler-linker(这里表示一个生成 binary的过程: 编译->汇编->链接器)里
+        ```sh
+        # 在compiler-assembler-linker里的实 现基本上的纯粹的软件实现
+        # 结果是在elf的一个stack的section里置位不可以执行.但是捕 获违反stack不可执行这个问题是在kernel里.
+
+        # 实现简介：
+        # 当调用gcc -z execstack test.c时,gcc将参数打包处理传给ld, 
+        # 由于参数的影响,ld会在生成的ELF文件stack对应的program header里置位p_flags的PF_X值。
+        # 当ELF文件执行时,由于RAM需要分配就会触发page fault
+        # 然后处理do_page_fault()函数里 调用access_error()以捕获到stack的执行权限错误.
+        #
+        ```
+    2. kernel里
+        ```sh
+        # 在kernel里的实现,随着处理器在(页模式)paging处理过程中涉及到功能寄存器中引入 No-eXecute的配置位
+        # 所以实际上kernel在实现NX的时候是在相关的寄存器里置NX的位,在 CPU操作的时候由硬件来做是否可以执行的检查.
+        #
+        # 实现简介：
+        # 要想在MMU层面使用NX,首先需要检测 CPUID.80000001H:EDX.NX [bit 20]是否为1,如果是1进行IA32_EFER.NXE的置位使能,然后按 照需在PAE/PTE里使能第63位(XD).
+        # 【需查看相关的文档和数据结构：Intel® 64 and IA-32 Architectures Developer’s Manual】
+        ```
+
+### **相关链接**
+[ASLR](https://www.cnblogs.com/rec0rd/p/7646857.html)
+[栈保护](https://www.cnblogs.com/mysky007/p/11105307.html)
+[NX-No-eXecute](https://hardenedlinux.github.io/system-security/2016/06/01/NX-analysis.html)
+
+

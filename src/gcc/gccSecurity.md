@@ -118,10 +118,32 @@
         # 要想在MMU层面使用NX,首先需要检测 CPUID.80000001H:EDX.NX [bit 20]是否为1,如果是1进行IA32_EFER.NXE的置位使能,然后按 照需在PAE/PTE里使能第63位(XD).
         # 【需查看相关的文档和数据结构：Intel® 64 and IA-32 Architectures Developer’s Manual】
         ```
+### **D. GOT表保护（-Wl,-z,relro）**
+- RELRO: 设置符号重定向表格为只读或在程序启动时就解析并绑定所有动态符号，从而减少对GOT（Global Offset Table）攻击。
+    1. Partial RELRO: gcc -Wl, -z, relro: ELF节重排 .got, .dtors,etc. precede the .data and .bss。GOT表仍然可写。
+    2. Full RELRO： gcc -Wl, -z, relro, -z, now：支持Partial RELRO的所有功能。GOT表只读。
+
+### **E. 对动态库和可执行程序瘦身 strip**
+- 作用：去除动态库或者可执行程序中的符号
+- gcc -s 或者 strip 可执行程序
+
+### **F. 禁用动态库搜索路径**
+- 防止修改动态库替换库攻击
+- -Wl,--disable-new-dtags,--rpath/-Wl,--enable-new-dtags,--rpath
+
+### **G. 如何检测可执行程序的安全性**
+- **使用工具 checksec**
+```sh
+# eg:
+# checksec --file=test
+# RELRO           STACK CANARY      NX            PIE             RPATH      RUNPATH      Symbols         FORTIFY Fortified       Fortifiable     FILE
+# Partial RELRO   No canary found   NX enabled    No PIE          No RPATH   No RUNPATH   No Symbols        No    0               24              #test
+```
 
 ### **相关链接**
 [ASLR](https://www.cnblogs.com/rec0rd/p/7646857.html)
 [栈保护](https://www.cnblogs.com/mysky007/p/11105307.html)
 [NX-No-eXecute](https://hardenedlinux.github.io/system-security/2016/06/01/NX-analysis.html)
+[GOT表的原理](https://baijiahao.baidu.com/s?id=1663915740492408592&wfr=spider&for=pc)
 
 

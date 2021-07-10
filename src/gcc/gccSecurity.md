@@ -83,6 +83,12 @@
 ![./image/stack_protect.png](./image/stack_protect.png)  
 ![./image/stack_protect_2.png](./image/stack_protect_2.png)  
 
+- **破解栈保护的方式**
+1. 不覆盖 canary，只覆盖全局变量
+2. 覆盖 canary，但是通过覆盖 canary 地址往上的函数参数、calling function 的栈帧等内容在函数 ret 之前 getshell
+3. 改写__stack_chk_fail或者 exit的 got 表项，在 check canary 失败之后会调用这两个 libc 函数
+4. 通过某种方式泄露出栈上的 canary 值，然后覆盖如果程序在 canary 被覆盖之后不会崩溃，而是重新运行，那么可以考虑每次覆盖 canary 的一个字节，一个字节一个字节的猜测 canary 的值  
+
 ### **C. 堆栈不可执行（-Wl,-z,noexecstack）**
 - **堆栈不可执行历史背景**
     1. GNU/Linux系统级攻防在历史上曾经停留在用户空间很长的时间，经历了NX/COOKIE/PIE/ASLR/RELRO的进化后， “researcher”们已经无法通过用户空间触及到“上帝宝藏”(-_root_-)
@@ -131,7 +137,46 @@
 - 防止修改动态库替换库攻击
 - -Wl,--disable-new-dtags,--rpath/-Wl,--enable-new-dtags,--rpath
 
-### **G. 如何检测可执行程序的安全性**
+### **G. 代码静态安全检测**
+- fortify 技术是 gcc 在编译源码的时候会判断程序哪些buffer会存在可能的溢出
+- 在 buffer 大小已知的情况下，GCC 会把 strcpy，memcpy 这类函数自动替换成相应的 __strcpy_chk(dst, src, dstlen)等函数。
+    ```sh
+    # GCC 在碰到以下四种情况的时候会采取不同的行为
+    char buf[5]; //buf = malloc(5)也一样
+
+    /* 1) Known correct.
+        No runtime checking is needed, memcpy/strcpy
+        functions are called (or their equivalents inline).  */
+    memcpy (buf, foo, 5);
+    strcpy (buf, "abcd");
+
+    /* 2) Not known if correct, but checkable at runtime.
+        The compiler knows the number of bytes remaining in object,
+        but doesn't know the length of the actual copy that will happen.
+        Alternative functions __memcpy_chk or __strcpy_chk are used in
+        this case that check whether buffer overflow happened.  If buffer
+        overflow is detected, __chk_fail () is called (the normal action
+        is to abort () the application, perhaps by writing some message
+        to stderr.  */
+    memcpy (buf, foo, n);
+    strcpy (buf, bar);
+
+    /* 3) Known incorrect.
+        The compiler can detect buffer overflows at compile
+        time.  It issues warnings and calls the checking alternatives
+        at runtime.  */
+    memcpy (buf, foo, 6);
+    strcpy (buf, "abcde");
+
+    /* 4) 不知道 buf 的 size，就不会 check  */
+    memcpy (p, q, n);
+    strcpy (p, q);
+    ```
+- gcc 中 -D_FORTIFY_SOURCE=2是默认开启的，但是只有开启 O2或以上优化的时候，这个选项才会被真正激活。
+- 如果指定-D_FORTIFY_SOURCE=1，那同样也要开启 O1或以上优化，这个选项才会被真正激活。
+- 可以使用-U_FORTIFY_SOURCE 或者-D_FORTIFY_SOURCE=0来禁用。
+
+### **H. 如何检测可执行程序的安全性**
 - **使用工具 checksec**
 ```sh
 # eg:
@@ -145,5 +190,5 @@
 [栈保护](https://www.cnblogs.com/mysky007/p/11105307.html)
 [NX-No-eXecute](https://hardenedlinux.github.io/system-security/2016/06/01/NX-analysis.html)
 [GOT表的原理](https://baijiahao.baidu.com/s?id=1663915740492408592&wfr=spider&for=pc)
-
+[软件常用安全防护手段 checksec](https://blog.csdn.net/axiejundong/article/details/73065023)
 

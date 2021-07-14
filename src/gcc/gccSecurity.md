@@ -22,3 +22,9 @@
         # ASLR[1] + PIE : Stack, Heap, libraries, executable-base [被动随机+受heap随机化的影响][heap和executable-base是连在一起的]
         # ASLR[2] + PIE : Stack, Heap, libraries, executable-base 随机化
         ```
+
+- **相关操作**
+    1. 设置 ASLR： echo 1 > /proc/sys/kernel/randomize_va_space
+
+
+

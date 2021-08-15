@@ -232,6 +232,26 @@ unsigned char hex_char_merge(unsigned char chH, unsigned char chL) { return chH<
 
 
 
+### <b>网络传输结构体接收端正常做法</b>
+- 网络传输结构体接收端正常做法：
+	a. 使用结构体指针强转
+	b. 要把数据拷走，避免bufferb被清空
+	c. 拷网络数据使用memcpy
+	
+### <b>C语言的结构体数组指针传递</b>
+- C语言的结构体数组指针传递
+	a. 函数声明:
+		int func(struct teacher*[]);
+		
+	b. 调用方式
+		struct teacher T[] = {{...},{...},{...}};
+		func(&T);
+		
+	c. 函数内使用
+		int func(struct teacher* argus[]){
+			struct teacher* temp = (struct teacher*)argus;
+			....;
+		}
 
 
 

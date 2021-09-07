@@ -191,4 +191,5 @@
 [NX-No-eXecute](https://hardenedlinux.github.io/system-security/2016/06/01/NX-analysis.html)
 [GOT表的原理](https://baijiahao.baidu.com/s?id=1663915740492408592&wfr=spider&for=pc)
 [软件常用安全防护手段 checksec](https://blog.csdn.net/axiejundong/article/details/73065023)
+[二进制漏洞挖掘之栈溢出-开启RELRO](https://blog.csdn.net/ylcangel/article/details/102625948)
 

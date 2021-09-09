@@ -23,12 +23,10 @@ extern char**environ;
 
 int printf_env() {
 	char**var;
-	//SS_LOG(SS_DEBUG, "PPid: %d", getppid());
 	printf("PPid: %d", getppid());
 	if (environ!=NULL) {
 		for (var =environ;*var !=NULL;++var) {
 			printf ("%s \n",*var);
-			//SS_LOG(SS_DEBUG, "%s", *var);
 		}
 	}
 	return 0;
@@ -170,19 +168,19 @@ int child_process(int pipefd[2])
 
 	printf("%s: child process pid=%d,uid=%d,gid=%d\n",
 			__func__, getpid(), getuid(), getgid());
-	printf("lonbon env: \n");
 	printf_env();
 
 	close(pipefd[1]);          /* Close unused write end */
 
-	//if (setuid(0) == -1) {
-	//	printf("%s: setuid(0) error: %s\n", __func__, strerror(errno));
-	//}
-	//system("/usr/local/sbin/lonbon_httpd &");
-	//execl(lonbon_httpd);
-	printf("Test =======XWH[start]=========\n");
-	execvp("/usr/local/sbin/lonbon_httpd", NULL);
-	printf("Test =======XWH[end]=========\n");
+	if (setuid(0) == -1) {
+		printf("%s: setuid(0) error: %s\n", __func__, strerror(errno));
+	}
+
+	// A. 在控制终端执行 "su -c my_exe - normaluser", 终端不一定能完全的能力/权限
+	// B. 用root 用户fork 出子进程，在子进程里调用system(my_exe), 
+	//  system 
+	system("my_exe &");
+	execvp("my_exe", NULL);
 	//test_net();
 	/*
 	for (;;) {

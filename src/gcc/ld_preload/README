@@ -1,0 +1,53 @@
+1. LB_PRELOAD的使用
+	a. 编写相关hack动态库
+	b. 添加环境变量
+		export LD_PRELOAD=`pwd`"/hackpwdtest.so"
+
+2. 应用：
+	a. 调换动态连接库中的函数
+
+	b. 欺骗shell命令, 提root权 [曾经很著名的漏洞，现在已经被fix了，看上去是root, 但没有实权 - ldpreload.c]
+		-- 使用 id / whoami验证
+		-- 历史:
+			这个软件是一个分布式计算平台，软件在所有的计算机上都有以ROOT身份运行的侦听程序（Daemon），用户可以把的一程序从A计算机提交到B计算机上去运行。
+			这些Daemon会把用户在A计算机上的所有环境变量带到B计算机上，在B计算机上的Daemon会fork出一个子进程，并且Daemon会调用seteuid、setegid来设置子程的执行宿主，
+			并在子进程空间中设置从A计算机带过来的环境变量，以仿真用户的运行环境。
+			于是我们可以通过设置LC_PRELOAD来迫使主程序使用我们的geteuid/getuid/getgid（它们都返回0，也就是Root权限）
+
+		-- 两种方法可以让LD_PRELOAD失效。
+			通过静态链接。使用gcc的-static参数可以把libc.so.6静态链入执行程序中。但这也就意味着你的程序不再支持动态链接。
+			通过设置执行文件的setgid / setuid标志。在有SUID权限的执行文件，系统会忽略LD_PRELOAD环境变量。
+			在一些UNIX版本上，如果你想要使用LD_PRELOAD环境变量，你需要有root权限。
+
+	c. 控制程序跳转
+		-- 在动态库中加入汇编控制程序跳转逻辑
+		-- 需要通过具体汇编代码得出跳转的逻辑位置
+
+3. 其他：
+	a. 如何查看一个目标文件/程序用了哪些库 
+		ldd -r -- 会根据当前系统环境变量LD_PRELOAD获取相应动态库信息显示
+
+	b. 如何使用gdb查看汇编代码
+		gdb excutable
+		disassemble function
+
+	c. 使用objdump的一些细节
+		编译的过程中添加-g
+		环境变量 LD_PRELOAD 会影响的发objdump的打印 -- 导致段错误(去掉LD_PRELOAD就正常了)
+
+	d. 如何使用gcc查看汇编代码
+		gcc -S source.file	// 只编译不汇编
+		
+		
+
+
+
+
+
+
+
+
+
+		
+
+

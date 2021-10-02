@@ -1,0 +1,89 @@
+1. open(const char* pathname. int flags, ... /*mode*/)
+    A. 系统调用open的flag参数: 
+       
+        a. O_RDONLY: 只读   ----> v3
+        b. O_WRONLY: 只写   ----> v3
+        c. O_RDWR: 读写     ----> v3
+        d. O_EXEC: 只执行打开
+        e, O_SEARCH: 只搜索打开，验证目录有没有打开权限
+
+        注 : 文件访问标志, 以上只能设置一项
+        
+        a. O_CLOEXEC: 创建新进程是关闭  ----> v4 (2.6.23内核后)
+        b. O_CREAT: 文件不存在则创建    ----> v3
+        c. O_EXCL: 配合O_CREAT使用，创建文件,若文件存在则失败  ----> v3
+        d. O_DIRECTORY: 若不是目录则失败    ----> v4
+        e. O_NOFOLLOW: 不进入软链接     ----> v4
+        f. O_LARGEFILE: 创建打文件专用(32位系统中打开大文件,64系统中无效) ----> null
+        g. O_TRUNC: 截断原有文件使其长度为0     ----> v3
+        h. O_APPEND: 在原有文件后追加   ----> v3
+        i. O_NONBLOCK: 非阻塞打开, 管道中使用  ----> v3
+        j. O_DIRECT: 无缓冲的输入输出   -----> null <有限制，需要打开特定的系统宏>
+
+        注 : 文件打开标志, 以上只能设置一项
+        
+        a. O_SYNC: 以同步的方式写文件, 每次write都等待物理IO操作完成并更新文件属性   ----> v3
+        b. O_DSYNC: 每次write都等待物理IO操作完成,但并不是每次都更新文件属性  ----> v3
+        d. O_ASYNC: 当IO操作可行的时候，发送信通知进程  ----> null(可移植性不好)
+
+        注: 文件的读写标志 (v3 ,v4 表示统一UNIX规范版本)
+
+    B. open函数的出错
+        a. EACCES: 权限不足.
+        b. EISDIR: 不允许用户对文件进行写操作
+        c. EMFILE: 打开的文件描述符个数超额
+        d. ENFILE: 打开的文件个数超额 
+        e. ENOENT: 不存在文件，但没有指定O_CREAT标志。或者指定了O_CREAT，但pathname指向的目录/软链接不存在.
+        f. EROFS:  只读文件系统
+        g. ETXTBSY: 不能修改正在运行的可执行文件
+
+    C. openat(int fd, const char* path, int flag, ... /*mode*/)
+        fd参数: 指出相对路径在文件系统中的开始地址
+        path参数: 指定相对路径名, 
+        
+    D. TOCTTOU漏洞: 
+        由于检查文件权限和打开文件的操作之间存在时间间隔(非原子操作)，引发欺骗操作
+        例如: 在检查文件操作权限之后, 攻击者可以将文件名替换成机密文件，结果打开的文件变成了机密文件。导致机密泄露
+
+
+2. close(int fd)
+    A. 一般进程结束的时候, 内核会关闭文件资源，但显示调用更科学
+    B. close函数的错误
+        a. 对一个未打开的文件描述符进行关闭
+        b. 对同一个描述符关闭两次
+        c. NFS系统中数据未到达远程磁盘
+
+3. lseek(int fd, off_t offset, int whence)
+    A. whence参数:
+        a. SEEK_CUR: 当前位置
+        b. SEEK_SET: 文件开头
+        c. SEEK_END: 文件结尾
+
+    B. 空洞文件
+        a. 将文件seek设置到现有文件长度后面,写新数据，就能够创建空洞文件
+        b. 空洞文件未写入的地方都被读为0
+        c. 空洞文件不需要分配磁盘块，但文件大小会改变
+        
+
+4. write函数调用成功并不保证数据全部被写到磁盘, 会返回是实际写的字节. [P]
+    A. write(int fd, void* buf, size_t count);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

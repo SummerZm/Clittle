@@ -1,0 +1,76 @@
+1. 文件内核数据结构简介 
+    A. 文件描述符与打开文件的关系
+        a. 进程级的文件描述符表
+            ---> 文件描述符标志(目前只有一个close_on_exec)
+            ---> 文件表项的指针
+            ---> 文件描述符是这张表的索引 index
+
+        b. 系统级的打开文件表
+            ---> 文件状态标志
+            ---> 文件偏移量
+            ---> 文件的inode对象引用
+
+        c. 文件系统的i-node表
+            ---> 文件类型(常规文件，管道文件, 套接字，等)
+            ---> 指向文件持有锁的列表
+            ---> 文件的各种属性(时间，大小等)
+
+2. 文件描述符操作 [P]
+    A. int dup(int fd) 复制文件描述符，指向同一个系统文件表项
+    B. int dup2(int fd, int fd2) 复制fd到fd2文件描述符, 若fd文件描述已经打开，则先关闭它，再复制
+    C. int fcntl(int fd, int cmd, ...)
+        a. 复制一个已有描述符
+            ---> F_DUPFD,  F_DUPFD_CLOEXEC
+
+        b. 设置/获取文件描述符标志 
+            ---> F_GETFD, F_SETFD
+
+        c. 设置/获取文件状态标志
+            ---> F_GETFL, F_SETFL
+            ---> 判断是否设置了 O_WRONLY, O_RDONLY, O_RDWR， 需要与O_ACCMODE相与，再进行判断
+            ---> 在linux中使用fcntl()设置O_SYNC貌似没用，可用fsync()函数替代，或者在打开文件时指定O_SYNC标志
+
+        d. 设置/获取异步IO信号的所有者
+            ---> 设置/获取SIGIO, SIGURG信号的进程或进程组ID
+            ---> F_GETOWN, F_SEETOWN
+
+        e. 设置/获取记录锁
+            ---> F_GETLK, F_SETLK, F_SETLKW
+
+
+3. 原子操作， 竞态条件， 独占文件
+    A. 文件的创建
+        ---> 使用O_EXCL和O_CREAT标志避免,两个进程同时使用O_CREAT打开文件写数据时的相互擦写问题
+        
+    B. 文件的追加
+        ---> 两个进程中同一个文件进行写操作的时候。如果不使用O_APPEND将会发生呢读写覆盖
+
+    C. 文件的偏移指针(多线程问题)
+        ---> size_t pread(int fd, void* buf, size_t count, off_t offset) 
+        ---> size_t  pwrite(int fd, void* buf, size_t count, off_t offset) 
+        ---> 以上两个函数，将文件指针基于当前偏移offset后读/写count数据到buffer中,之后将指针挪回原始位置
+             避免；多线程中，不同线程对同一个文件表项的文件偏移量进行修改导致错乱问题
+    
+4. /dev/fd目录
+    A. /dev/fd/是一个虚拟目录. /dev/fd/n中的n, 表示进程打开的文件描述符n 
+    B. 这个目录的更多是用于shell
+    C. 虽然使用 open create 等函数操作 /dev/fd/n; 但在Linux上使用create 操作/dev/fd/n 会导致底层文件被截短
+
+5. 32位系统大文件读写
+    A. 方法一: 使用LFS API。编译时，定义_LARGEFILE64_SOURCE功能测试宏, 然后使用 open64 等类似的API
+    B. 方法二：编译时定义 _FILE_OFFSET_BIT
+        ---> eg: cc -D_FILE_OFFSET_BIT=64 test.c
+        ---> 优势：不用修改代码
+        ---> 要求：代码必须符号规范. 程序应当使用 off_t, size_t等类型，而不是原生的C语言数据类型
+
+6. 磁盘写入系统调用
+    A. void sync(void); 将内核缓冲区的数据排入写队列,然后返回，并不保证完全写入磁盘。
+    B. int fsync(int fd); 将fd代表的文件的数据写入磁盘后才返回。 保证数据完全写入磁盘
+
+7. 文件截断
+    A. int truncate(char* pathname, off_t count); // 不用打开文件
+    B. int ftruncate(int fd, off_t count);
+
+
+
+

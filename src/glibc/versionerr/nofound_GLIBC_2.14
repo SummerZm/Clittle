@@ -1,0 +1,44 @@
+Qusetion: Not found _GLIBC_2.4.0/运行时报错，找不到GLIBC_2.14的符号:
+
+A. 如何查看gcc版本?
+	1. ldd 本质shell脚本
+	2. ldd --version
+
+B. GLibc版本差别，如何找出不兼容符号?
+	1. nm 查看符合列表的工
+	2. nm source | grep GLIBC_2.1
+
+C. glibc版本不兼容3种解决方法
+	1. 改用静态链接
+		-- 缺点: 多线程环境下, 最好使用jemalloc(或者tcmalloc)来管理内存分配和释放. 所以不能去除对它的依赖, 也就不能用静态链接
+
+	2. 编译时指定符号版本
+		-- 在编译的时候强制引用运行环境的glibc版本以下的函数符号memcpy
+
+		-- 如何获取函数符号的版本, 两种方法?
+			a. 在运行环境下执行: nm -D /lib64/libc.so.6 | grep memcpy
+			b. 在运行环境下执行: objdump -T /lib64/libc.so.6 | grep memcpy
+
+		-- 如何编译时指定版本?
+			a. 用汇编指令.symver可以完成版本指定(确保在所有调用 memcpy之前完成汇编指令的版本指定):
+				asm(.symver memcpy, memcpy@GLIBC_2.5.5)
+
+			b. 缺点: 链接的其他若干公共库(.a)也有对memcpy的引用,因为公共库在编译的时候已经指定了对memcpy的2.14版, 所以这里的汇编指令对其是没有效果的
+
+
+	3. 链接时指定符号版本
+		-- 弥补比编译时，其他公共库(.a)已经指定符号版本的问题
+		-- 编编译选项: --warp malloc
+		-- 添加__warp_memcpy()函数:
+
+			void __warp_memcpy(...) {
+				asm(.symver memcpy, memcpy@GLIBC_2.5.5)
+				memcpy(....);
+			}
+
+		-- C++ 代码中需要使用extern C {};
+
+D. 其他
+	1. 对于libc库，出于多线程的考虑不能使用静态链接，采用编译时指定/链接时指定进行版本兼容
+	2. 对于stdc++, 可以使用静态连接
+
